@@ -18,8 +18,14 @@ public class RevitDrofusComparerCommand : IRevitExtension<AssistantArgs>
                 .Filter(queryFilter);
 
         var queryResult = client.GetOccurrences(drofusQuery);
+        var json = System.Text.Json.JsonSerializer.Serialize(queryResult);
+        var drofusElements = System.Text.Json.JsonSerializer.Deserialize<List<DrofusHelper.DrofusElement>>(json) ?? new List<DrofusHelper.DrofusElement>();
 
         var revitElements = RevitHelper.GetRevitElements(document, args);
+        var revitOccurrenceIds = revitElements.Select(e => e.OccurrenceId).Where(id => id > 0).ToHashSet();
+
+        var check1ResultIds = Workhorse.Check1(revitOccurrenceIds, drofusElements);
+        var check2ResultIds = Workhorse.Check2(revitOccurrenceIds, drofusElements, document);
 
         return Result.Text.Succeeded("RevitDrofusComparer framework is ready.");
     }

@@ -1,21 +1,35 @@
+using Microsoft.VisualBasic;
+
 namespace RevitDrofusComparer;
 
 public static class RevitHelper
 {
     public static List<RevitElement> GetRevitElements(Document document, AssistantArgs AssistantArgs)
     {
-         var revitInstances = new List<RevitElement>();
-         var collector = new FilteredElementCollector(document);
-         var elements = collector.WhereElementIsNotElementType().ToElements();
-            foreach (var element in elements)
+        var revitInstances = new List<RevitElement>();
+        var categoryIds = AssistantArgs.RevitCategories.Select(idString => new ElementId(long.Parse(idString))).ToList();
+        var collector = new FilteredElementCollector(document).WhereElementIsNotElementType().WherePasses(new ElementMulticategoryFilter(categoryIds)).ToElementIds();
+        
+            foreach (var elemId in collector)
             {
-                element.LookupParameter(AssistantArgs.RevitParam1)?.AsString();
+                using var element = document.GetElement(elemId);
+                var occurrenceId = 0;
+                var idParam = element.LookupParameter("drofus_occurrence_id");
+                if(idParam != null)
+                    {
+                    occurrenceId = idParam.StorageType switch
+                    {
+                        StorageType.Integer => idParam.AsInteger(),
+                        StorageType.String => int.TryParse(idParam.AsString(), out var parsed) ? parsed : 0,
+                        _ => 0
+                    };
+                    }
                 revitInstances.Add(new RevitElement
                 {
-                    ElementId = element.Id.IntegerValue,
+                    ElementId = elemId.IntegerValue,
                     Guid = element.LookupParameter("IfcGUID")?.AsString() ?? "",
-                    ParameterValue = element.LookupParameter(AssistantArgs.RevitParam1)?.AsString() ?? "",
-                    ParameterValue2 = element.LookupParameter(AssistantArgs.RevitParam2)?.AsString() ?? ""
+                    OccurrenceId = occurrenceId,
+                    Tag = element.LookupParameter("FOB_Merkestreng")?.AsString() ?? ""
                 });
             }
             return revitInstances;
@@ -25,7 +39,7 @@ public static class RevitHelper
     {
         public int ElementId { get; set; } = 0;
         public string Guid { get; set; } = "";
-        public string ParameterValue { get; set; } = "";
-        public string ParameterValue2 { get; set; } = "";
+        public int OccurrenceId { get; set; } = 0;
+        public string Tag {get; set;} = "";
     }
 }
