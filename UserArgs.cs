@@ -7,5 +7,9 @@ public class AssistantArgs
     [RevitAutoFill(RevitAutoFillSource.Categories)]
     public List<string>? RevitCategories { get; set; }
 
+    [Description("Velg hvor rapport skal lagres"), ControlData(ToolTip ="")]
+    [ControlType(ControlType.Browse), ControlSettings("SelectFolder", "true")]
+    public string? UserFilePath {get; set;}
+
 
 }

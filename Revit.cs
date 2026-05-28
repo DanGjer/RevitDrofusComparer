@@ -1,3 +1,4 @@
+using Autodesk.Revit.DB.Events;
 using Microsoft.VisualBasic;
 
 namespace RevitDrofusComparer;
@@ -29,7 +30,8 @@ public static class RevitHelper
                     ElementId = elemId.IntegerValue,
                     Guid = element.LookupParameter("IfcGUID")?.AsString() ?? "",
                     OccurrenceId = occurrenceId,
-                    Tag = element.LookupParameter("FOB_Merkestreng")?.AsString() ?? ""
+                    Tag = element.LookupParameter("FOB_Merkestreng")?.AsString() ?? "",
+                    FamilyName = element.Name
                 });
             }
             return revitInstances;
@@ -41,5 +43,14 @@ public static class RevitHelper
         public string Guid { get; set; } = "";
         public int OccurrenceId { get; set; } = 0;
         public string Tag {get; set;} = "";
+        public string FamilyName {get; set;} = "";
+        public RevitStatus Status {get; set;} = RevitStatus.Unknown;
+
+        public enum RevitStatus        {
+            Unknown = 0,
+            OK = 1,
+            MissingInDrofus = 2,
+
+        }
     }
 }

@@ -21,6 +21,7 @@
   <PropertyGroup>
     <LangVersion>12</LangVersion>
     <RootNamespace>RevitDrofusComparer</RootNamespace>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
@@ -29,6 +30,7 @@
 
   <ItemGroup>
     <PackageReference Include="dRofusClient.Revit.$(MainRevitVersion)" Version="*" />
+    <PackageReference Include="ClosedXML" Version="0.104.2" />
   </ItemGroup>
 
 </Project>

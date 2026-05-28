@@ -23,5 +23,17 @@ public static class DrofusHelper
 
         [JsonPropertyName("ifc_guids_text_property")]
         public string? DrofusGuid {get; set;} = "";
+
+        [JsonPropertyName("occurrence_classification_156_classification_entry_id_code")]
+        public string? OmegaStatus {get; set;} = "";
+
+        public DrofusStatus Status {get; set;} = DrofusStatus.Unknown;
+
+        public enum DrofusStatus        {
+            Unknown = 0,
+            OK = 1,
+            MissingInRevit = 2,
+
+        }
     }
 }

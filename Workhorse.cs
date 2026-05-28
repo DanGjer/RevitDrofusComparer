@@ -1,42 +1,44 @@
+using System.Windows.Controls.Primitives;
+
 namespace RevitDrofusComparer;
 
 public static class Workhorse
 {
-    public static HashSet<int> Check1 (HashSet<int> revitOccurrenceIds, List<DrofusHelper.DrofusElement> drofusElements)
+    public static void Check1 (List<DrofusHelper.DrofusElement> allDrofusElements, List<RevitHelper.RevitElement>allRevitElements)
     {
-        HashSet<int> elementsNotInDrofus = [];
-        var drofusIds = drofusElements.Select(x => x.DrofusId).ToHashSet();
-        foreach (int instance in revitOccurrenceIds)
+        var drofusIds = allDrofusElements.Select(x => x.DrofusId).ToHashSet();
+        foreach (var element in allRevitElements)
         {
-            if (!drofusIds.Contains(instance))
+            if (!drofusIds.Contains(element.OccurrenceId))
             {
-                elementsNotInDrofus.Add(instance);
+                element.Status = RevitHelper.RevitElement.RevitStatus.MissingInDrofus;
+            }
+            else
+            {
+                element.Status = RevitHelper.RevitElement.RevitStatus.OK;
             }
         }
-
-        return elementsNotInDrofus;
     }
 
-    public static HashSet<int> Check2 (HashSet<int> revitOccurrenceIds, List<DrofusHelper.DrofusElement> drofusElements, Document document)
+    public static void Check2 (List<DrofusHelper.DrofusElement> allDrofusElements, List<RevitHelper.RevitElement> allRevitElements, Document document)
     {
         string? modname = document.ProjectInformation.LookupParameter("model_name_drofus")?.AsString();
-        HashSet<int> elementsNotInRevit = [];
-        var drofusIds = drofusElements.Where(x => x.DrofusModelName == modname.ToString()).Select(x => x.DrofusId).ToHashSet();
+        var revitIds = allRevitElements.Select(x => x.OccurrenceId).ToHashSet();
 
-        foreach (int occurrence in drofusIds)
+        foreach (var occurrence in allDrofusElements)
         {
-            if (!revitOccurrenceIds.Contains(occurrence))
+            if (occurrence.DrofusModelName == modname)
             {
-                elementsNotInRevit.Add(occurrence);
+                if (revitIds.Contains(occurrence.DrofusId))
+                {
+                    occurrence.Status = DrofusHelper.DrofusElement.DrofusStatus.OK;
+                }
+                else
+                {
+                    occurrence.Status = DrofusHelper.DrofusElement.DrofusStatus.MissingInRevit;
+                }
             }
         }
-
-        return elementsNotInRevit;
-    }
-
-    public static void Check1Lookup (List<int> revitIds, List<RevitHelper.RevitElement> revitElements)
-    {
-        
     }
     
 }
