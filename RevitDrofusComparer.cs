@@ -8,13 +8,16 @@ public class RevitDrofusComparerCommand : IRevitExtension<AssistantArgs>
 
         if (document is null)
             return Result.Text.Failed("Revit has no active model open");
+        
+        if (string.IsNullOrWhiteSpace(args.UserFilePath))
+            return Result.Text.Failed("No file path specified");
 
         var client = new dRofusClientFactory().Create(document);
 
         var queryFilter = Filter.In("article_id_responsibility_responsibility","RIE","AUT");
 
         var drofusQuery = Query.List()
-                .Select("Id", "article_id_name", "classification_number", "occurrence_data_17_11_11_10", "ifc_guids_text_property", "occurrence_classification_156_classification_entry_id_code")
+                .Select("Id", "article_id_name", "classification_number", "occurrence_data_17_11_11_10", "ifc_guids_text_property", "occurrence_classification_156_classification_entry_id_code", "is_sub_occurrence", "parent_occurrence_id_id", "parent_occurrence_id_article_id_name")
                 .Filter(queryFilter);
 
         var queryResult = client.GetOccurrences(drofusQuery);
@@ -29,10 +32,13 @@ public class RevitDrofusComparerCommand : IRevitExtension<AssistantArgs>
         var drofusOccurrencesMissingInRevit = drofusElements.Where(x => x.Status == DrofusHelper.DrofusElement.DrofusStatus.MissingInRevit);
         
 
+        var modNameParam = document.ProjectInformation.LookupParameter("model_name_drofus");
+        string modName = modNameParam?.AsString() ?? "";
         var revitMissing = revitElemsMissingInDrofus.ToList();
         var drofusMissing = drofusOccurrencesMissingInRevit.ToList();
 
-        var reportPath = System.IO.Path.Combine(args.UserFilePath, "RevitDrofusComparer_Report.xlsx");
+        string fileName = $"RevitDrofusComparer_{modName}.xlsx";
+        var reportPath = System.IO.Path.Combine(args.UserFilePath, fileName);
 
         ExportReportXlsx(reportPath, revitMissing, drofusMissing);
 
@@ -77,6 +83,9 @@ public class RevitDrofusComparerCommand : IRevitExtension<AssistantArgs>
         ws2.Cell(1, 5).Value = "DrofusGuid";
         ws2.Cell(1, 6).Value = "OmegaStatus";
         ws2.Cell(1, 7).Value = "Status";
+        ws2.Cell(1, 8).Value = "IsSubItem";
+        ws2.Cell(1, 9).Value = "HostId";
+        ws2.Cell(1, 10).Value = "HostItemName";
 
         for (int i = 0; i < drofusRows.Count; i++)
         {
@@ -89,13 +98,16 @@ public class RevitDrofusComparerCommand : IRevitExtension<AssistantArgs>
             ws2.Cell(r, 5).Value = x.DrofusGuid ?? "";
             ws2.Cell(r, 6).Value = x.OmegaStatus ?? "";
             ws2.Cell(r, 7).Value = x.Status.ToString();
+            ws2.Cell(r, 8).Value = x.IsSubItem;
+            ws2.Cell(r, 9).Value = x.HostId;
+            ws2.Cell(r, 10).Value = x.HostItemName ?? "";
         }
 
         int ws1LastRow = Math.Max(1, revitRows.Count + 1);
         int ws2LastRow = Math.Max(1, drofusRows.Count + 1);
 
         ws1.Range(1, 1, ws1LastRow, 6).SetAutoFilter();
-        ws2.Range(1, 1, ws2LastRow, 7).SetAutoFilter();
+        ws2.Range(1, 1, ws2LastRow, 10).SetAutoFilter();
 
         ws1.SheetView.FreezeRows(1);
         ws2.SheetView.FreezeRows(1);
